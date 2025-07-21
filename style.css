@@ -1,0 +1,14 @@
+body {
+  font-family: sans-serif;
+  padding: 20px;
+  background-color: #f9f9f9;
+}
+
+#viz {
+  margin-top: 30px;
+}
+
+button {
+  margin-top: 20px;
+  padding: 10px 20px;
+}
