@@ -35,7 +35,7 @@
 
     let selectedCountry = "India";
 
-    d3.csv("cars2017.csv").then(data => {
+    d3.csv("world_population_data.csv").then(data => {
       data.forEach(d => {
         d.year = +d.year;
         d.population = +d.population;
