@@ -42,10 +42,14 @@
 
     d3.csv("world_population_data_with_regions.csv").then(data => {
       data.forEach(d => {
+        d.year = +d.year;
+       // d.region = +d.region;
         d.life_expectancy = +d.life_expectancy;
         d.fertility_rate = +d.fertility_rate;
         d.population = +d.population;
       });
+
+      data = data.filter(d => d.year === 2000);
 
       // Scales
       const x = d3.scaleLinear()
@@ -59,6 +63,11 @@
       const r = d3.scaleSqrt()
         .domain([0, d3.max(data, d => d.population)])
         .range([2, 20]);
+
+      const color = d3.scaleOrdinal(d3.schemeSet2); // or d3.schemeTableau10 or d3.schemeSet2
+
+      const regions = Array.from(new Set(data.map(d => d.region)));
+      color.domain(regions);
 
       // Axes
       svg.append("g")
@@ -92,7 +101,9 @@
         .attr("cx", d => x(d.fertility_rate))
         .attr("cy", d => y(d.life_expectancy))
         .attr("r", d => r(d.population))
-        .attr("fill", "steelblue")
+ //     .attr("fill", "steelblue")
+ //     .attr("r", d => Math.sqrt(d.population) / 100) // adjust scale
+        .attr("fill", d => color(d.region))            // <-- Color by Region
         .attr("opacity", 0.7)
         .on("mouseover", function (event, d) {
           tooltip.transition().duration(200).style("opacity", .9);
