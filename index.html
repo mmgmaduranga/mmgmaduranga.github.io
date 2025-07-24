@@ -2,155 +2,105 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Population-Fertility-Life Expectancy Story</title>
-  <script src="https://d3js.org/d3.v6.min.js"></script>
+  <title>Life Expectancy vs Fertility Rate</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
-    body { font-family: sans-serif; text-align: center; }
-    svg { margin-top: 20px; }
-    .annotation { font-size: 12px; fill: #333; }
-    #controls { margin: 20px; }
+    body { font-family: sans-serif; }
+    .axis-label {
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .tooltip {
+      position: absolute;
+      text-align: center;
+      padding: 6px;
+      font-size: 12px;
+      background: lightsteelblue;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
-  <h1>Global Trends: Fertility, Life Expectancy, Population</h1>
-  <div id="controls">
-    <button id="prev">Previous</button>
-    <button id="next">Next</button>
-    <label for="country">Country:</label>
-    <select id="country"></select>
-  </div>
-  <svg width="700" height="500"></svg>
+  <h2>Life Expectancy vs Fertility Rate (Bubble Size: Population)</h2>
+  <svg width="800" height="600"></svg>
 
   <script>
-    const margin = {top: 40, right: 40, bottom: 40, left: 60},
-          width = 700 - margin.left - margin.right,
-          height = 500 - margin.top - margin.bottom;
+    const margin = { top: 50, right: 50, bottom: 70, left: 70 },
+          width = 800 - margin.left - margin.right,
+          height = 600 - margin.top - margin.bottom;
 
     const svg = d3.select("svg")
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    let sceneIndex = 0;
-    let scenes = [scene1, scene2, scene3];
+    const tooltip = d3.select("body")
+      .append("div")
+      .attr("class", "tooltip")
+      .style("opacity", 0);
 
-    let selectedCountry = "India";
-
-    d3.csv("world_population_data.csv").then(data => {
+    d3.csv("world_population_data_with_regions.csv").then(data => {
       data.forEach(d => {
-        d.year = +d.year;
-        d.population = +d.population;
-        d.fertility_rate = +d.fertility_rate;
-        d.life_expectancy = +d.life_expectancy;
+        d.LifeExpectancy = +d.LifeExpectancy;
+        d.FertilityRate = +d.FertilityRate;
+        d.Population = +d.Population;
       });
 
-      const countries = Array.from(new Set(data.map(d => d.country)));
-      countries.forEach(c => d3.select("#country").append("option").text(c));
+      // Scales
+      const x = d3.scaleLinear()
+        .domain([d3.min(data, d => d.FertilityRate) - 0.5, d3.max(data, d => d.FertilityRate) + 0.5])
+        .range([0, width]);
 
-      d3.select("#country").on("change", function() {
-        selectedCountry = this.value;
-        updateScene();
-      });
+      const y = d3.scaleLinear()
+        .domain([d3.min(data, d => d.LifeExpectancy) - 5, d3.max(data, d => d.LifeExpectancy) + 5])
+        .range([height, 0]);
 
-      d3.select("#next").on("click", () => {
-        sceneIndex = Math.min(sceneIndex + 1, scenes.length - 1);
-        updateScene();
-      });
+      const r = d3.scaleSqrt()
+        .domain([0, d3.max(data, d => d.Population)])
+        .range([2, 20]);
 
-      d3.select("#prev").on("click", () => {
-        sceneIndex = Math.max(sceneIndex - 1, 0);
-        updateScene();
-      });
+      // Axes
+      svg.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x));
 
-      function updateScene() {
-        svg.selectAll("*").remove();
-        scenes[sceneIndex](data);
-      }
+      svg.append("g")
+        .call(d3.axisLeft(y));
 
-      function scene1(data) {
-        // Static scatterplot for year 2000
-        const filtered = data.filter(d => d.year === 2000);
-        const x = d3.scaleLinear().domain([0, 8]).range([0, width]);
-        const y = d3.scaleLinear().domain([30, 90]).range([height, 0]);
-        const r = d3.scaleSqrt().domain([0, d3.max(data, d => d.population)]).range([2, 30]);
+      // Labels
+      svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", width / 2)
+        .attr("y", height + 50)
+        .attr("text-anchor", "middle")
+        .text("Fertility Rate");
 
-        svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
-        svg.append("g").call(d3.axisLeft(y));
+      svg.append("text")
+        .attr("class", "axis-label")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -height / 2)
+        .attr("y", -50)
+        .attr("text-anchor", "middle")
+        .text("Life Expectancy");
 
-        svg.selectAll("circle")
-          .data(filtered)
-          .enter()
-          .append("circle")
-          .attr("cx", d => x(d.fertility_rate))
-          .attr("cy", d => y(d.life_expectancy))
-          .attr("r", d => r(d.population))
-          .attr("fill", "steelblue")
-          .append("title").text(d => `${d.country}\nPopulation: ${d.population}`);
-      }
-
-      function scene2(data) {
-        // Animated scatterplot
-        let year = 1960;
-        const x = d3.scaleLinear().domain([0, 8]).range([0, width]);
-        const y = d3.scaleLinear().domain([30, 90]).range([height, 0]);
-        const r = d3.scaleSqrt().domain([0, d3.max(data, d => d.population)]).range([2, 30]);
-
-        svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
-        svg.append("g").call(d3.axisLeft(y));
-
-        const yearLabel = svg.append("text")
-          .attr("x", width - 100)
-          .attr("y", height - 10)
-          .style("font-size", "16px")
-          .text(year);
-
-        const dots = svg.selectAll("circle").data(data.filter(d => d.year === year))
-          .enter().append("circle")
-          .attr("cx", d => x(d.fertility_rate))
-          .attr("cy", d => y(d.life_expectancy))
-          .attr("r", d => r(d.population))
-          .attr("fill", "steelblue")
-          .append("title").text(d => d.country);
-
-        const interval = d3.interval(() => {
-          year += 1;
-          if (year > 2020) interval.stop();
-          const frameData = data.filter(d => d.year === year);
-          svg.selectAll("circle")
-            .data(frameData)
-            .join("circle")
-            .attr("cx", d => x(d.fertility_rate))
-            .attr("cy", d => y(d.life_expectancy))
-            .attr("r", d => r(d.population))
-            .attr("fill", "steelblue");
-          yearLabel.text(year);
-        }, 500);
-      }
-
-      function scene3(data) {
-        // Line chart for selected country
-        const countryData = data.filter(d => d.country === selectedCountry);
-        const x = d3.scaleLinear().domain(d3.extent(countryData, d => d.year)).range([0, width]);
-        const y = d3.scaleLinear().domain([0, d3.max(countryData, d => Math.max(d.fertility_rate, d.life_expectancy))]).range([height, 0]);
-
-        svg.append("g").attr("transform", `translate(0,${height})`).call(d3.axisBottom(x));
-        svg.append("g").call(d3.axisLeft(y));
-
-        const line = (metric, color) => {
-          svg.append("path")
-            .datum(countryData)
-            .attr("fill", "none")
-            .attr("stroke", color)
-            .attr("stroke-width", 2)
-            .attr("d", d3.line()
-              .x(d => x(d.year))
-              .y(d => y(d[metric])));
-        };
-
-        line("fertility_rate", "orange");
-        line("life_expectancy", "green");
-      }
-
-      updateScene();
+      // Scatter plot
+      svg.selectAll("circle")
+        .data(data)
+        .enter()
+        .append("circle")
+        .attr("cx", d => x(d.FertilityRate))
+        .attr("cy", d => y(d.LifeExpectancy))
+        .attr("r", d => r(d.Population))
+        .attr("fill", "steelblue")
+        .attr("opacity", 0.7)
+        .on("mouseover", function (event, d) {
+          tooltip.transition().duration(200).style("opacity", .9);
+          tooltip.html(`<strong>${d.Country}</strong><br>Life Expectancy: ${d.LifeExpectancy}<br>Fertility Rate: ${d.FertilityRate}<br>Population: ${d.Population}`)
+            .style("left", (event.pageX + 10) + "px")
+            .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", () => tooltip.transition().duration(500).style("opacity", 0));
     });
   </script>
 </body>
