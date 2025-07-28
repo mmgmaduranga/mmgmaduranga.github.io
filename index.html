@@ -3,7 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <title>Life Expectancy vs Fertility Rate</title>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
+ <script src="https://d3js.org/d3.v6.min.js"></script>
+  <script src="https://raw.githack.com/susielu/d3-annotation/master/d3-annotation.min.js"></script>
+
   <style>
     body { font-family: sans-serif; }
     .axis-label {
@@ -23,33 +25,113 @@
   </style>
 </head>
 <body>
-  <h2>Life Expectancy vs Fertility Rate (Bubble Size: population)</h2>
-  <svg width="800" height="600"></svg>
+<!--  <h1> Life Expectancy vs Fertility Rate (Bubble Size: Population) in 1975</h1>-->
+  <h1> Mapping Global Well-being: Life Expectancy, Fertility, and Population</h1>
+  <h2 id="scene-subheading"></h2>
+  <p id="scene-description-top"></p>
+  <div id="controls">
+    <button id="prev">Previous</button>
+    <button id="next">Next</button>
+  </div>
+<!--  <div id="filters" style="display: none;">-->
+<!--    <label for="yearSelect">Year:</label>-->
+<!--    <select id="yearSelect"></select>-->
+
+<!--    <label for="regionSelect">Region:</label>-->
+<!--    <select id="regionSelect"></select>-->
+<!--  </div>-->
+
+<div id="viz-container" style="display: flex; gap: 20px; margin: 20px;">
+  <div>
+  <svg width="900" height="600"></svg>
+  </div>
+  <div id="filters" style="display: none; min-width: 180px;">
+    <label for="yearSelect">Year:</label><br>
+    <select id="yearSelect" style="width: 100%; margin-bottom: 10px;"></select><br>
+
+    <label for="regionSelect">Region:</label><br>
+    <select id="regionSelect" style="width: 100%;"></select>
+  </div>
+  <div id="description-box" style="
+    position: absolute;
+    bottom: 100px;
+    right: 30px;
+    width: 500px;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 10px;
+    font-size: 17px;
+    font-family: sans-serif;
+    border-radius: 4px;
+<!--    box-shadow: 0 0 5px rgba(0,0,0,0.2);-->
+">
+    <p id="scene-description-right"></p>
+  </div>
+</div>
+
 
   <script>
+
+    let animationInterval = null;
+
     const margin = { top: 50, right: 50, bottom: 70, left: 70 },
           width = 800 - margin.left - margin.right,
           height = 600 - margin.top - margin.bottom;
 
-    const svg = d3.select("svg")
-      .append("g")
+    const svg = d3.select("svg").append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    const tooltip = d3.select("body")
-      .append("div")
+    const tooltip = d3.select("body").append("div")
       .attr("class", "tooltip")
       .style("opacity", 0);
 
-    d3.csv("world_population_data_with_regions.csv").then(data => {
-      data.forEach(d => {
-        d.year = +d.year;
-       // d.region = +d.region;
-        d.life_expectancy = +d.life_expectancy;
-        d.fertility_rate = +d.fertility_rate;
-        d.population = +d.population;
-      });
+    const sceneSubheadings = [
+      "Overview: Year 1975 Snapshot",
+      "Animation: Change Over Time (1975 - 2010)",
+      "Explore Trends by Year and Region"
+    ];
 
-      data = data.filter(d => d.year === 2000);
+    const sceneDescriptionsTop = [
+      "This scene shows a snapshot of life expectancy vs fertility rate in the year 1975. Bubble size represents population size, and colors indicate world regions.",
+      "This scene animates how life expectancy, fertility, and population have changed for countries from 1975 to 2010.",
+      "Use the filters on the left to select a specific year and region. The chart updates dynamically, allowing you to observe how fertility rate, life expectancy, and population size vary across countries. This interactive view helps uncover regional differences and evolving global patterns."
+    ];
+    const sceneDescriptionsRight = [
+      "In 1975, most European and North American countries had the highest life expectancy and lower fertility rates, indicating advanced healthcare and family planning. In contrast, many countries in Asia and Africa experienced higher fertility rates and lower life expectancy, highlighting global disparities in development and health conditions.",
+      "Paragraph 2"
+    ];
+
+
+    function drawLegend(colorScale) {
+      const legend = svg.append("g")
+        .attr("class", "legend")
+        .attr("transform", `translate(${width + 10}, 20)`);  // Position it on the right
+
+      const regions = colorScale.domain();
+
+      regions.forEach((region, i) => {
+        const legendRow = legend.append("g")
+          .attr("transform", `translate(0, ${i * 20})`);
+
+        legendRow.append("rect")
+          .attr("width", 12)
+          .attr("height", 12)
+          .attr("fill", colorScale(region));
+
+        legendRow.append("text")
+          .attr("x", 18)
+          .attr("y", 10)
+          .attr("text-anchor", "start")
+          .style("font-size", "12px")
+          .text(region);
+      });
+    }
+
+
+    function scene1(data) {
+      const filtered = data.filter(d => d.year === 1975);
+
+      // Clear previous scene
+      svg.selectAll("*").remove();
 
       // Scales
       const x = d3.scaleLinear()
@@ -62,20 +144,18 @@
 
       const r = d3.scaleSqrt()
         .domain([0, d3.max(data, d => d.population)])
-        .range([2, 20]);
-
-      const color = d3.scaleOrdinal(d3.schemeSet2); // or d3.schemeTableau10 or d3.schemeSet2
+        .range([2, 40]);
 
       const regions = Array.from(new Set(data.map(d => d.region)));
-      color.domain(regions);
+      const color = d3.scaleOrdinal().domain(regions).range(d3.schemeSet2);
+      drawLegend(color);
 
       // Axes
       svg.append("g")
         .attr("transform", `translate(0,${height})`)
         .call(d3.axisBottom(x));
 
-      svg.append("g")
-        .call(d3.axisLeft(y));
+      svg.append("g").call(d3.axisLeft(y));
 
       // Labels
       svg.append("text")
@@ -93,25 +173,433 @@
         .attr("text-anchor", "middle")
         .text("Life Expectancy");
 
-      // Scatter plot
+      // Circles
       svg.selectAll("circle")
-        .data(data)
+        .data(filtered)
         .enter()
         .append("circle")
         .attr("cx", d => x(d.fertility_rate))
         .attr("cy", d => y(d.life_expectancy))
         .attr("r", d => r(d.population))
- //     .attr("fill", "steelblue")
- //     .attr("r", d => Math.sqrt(d.population) / 100) // adjust scale
-        .attr("fill", d => color(d.region))            // <-- Color by Region
+        .attr("fill", d => color(d.region))
         .attr("opacity", 0.7)
         .on("mouseover", function (event, d) {
           tooltip.transition().duration(200).style("opacity", .9);
-          tooltip.html(`<strong>${d.country_name}</strong><br>Life Expectancy: ${d.life_expectancy}<br>Fertility Rate: ${d.fertility_rate}<br>population: ${d.population}`)
-            .style("left", (event.pageX + 10) + "px")
-            .style("top", (event.pageY - 28) + "px");
+          tooltip.html(
+            `<strong>${d.country_name}</strong><br>
+             Life Expectancy: ${d.life_expectancy}<br>
+             Fertility Rate: ${d.fertility_rate}<br>
+             Population: ${d.population}`
+          )
+          .style("left", (event.pageX + 10) + "px")
+          .style("top", (event.pageY - 28) + "px");
         })
         .on("mouseout", () => tooltip.transition().duration(500).style("opacity", 0));
+
+        // Find min and max population countries
+        const minPop = d3.min(filtered, d => d.population);
+        const maxPop = d3.max(filtered, d => d.population);
+
+        const minCountry = filtered.find(d => d.population === minPop);
+        const maxCountry = filtered.find(d => d.population === maxPop);
+
+        // Create annotations
+        const annotations = [
+          {
+            note: {
+              label: `Lowest population: ${minCountry.country_name}`,
+              title: `Pop: ${minCountry.population}`
+            },
+            x: x(minCountry.fertility_rate),
+            y: y(minCountry.life_expectancy),
+            dy: -40,
+            dx: 30,
+            subject: { radius: r(minCountry.population), radiusPadding: 4 }
+          },
+          {
+            note: {
+              label: `Highest population: ${maxCountry.country_name}`,
+              title: `Pop: ${maxCountry.population}`
+            },
+            x: x(maxCountry.fertility_rate),
+            y: y(maxCountry.life_expectancy),
+            dy: -40,
+            dx: -60,
+            subject: { radius: r(maxCountry.population), radiusPadding: 4 }
+          }
+        ];
+
+        const makeAnnotations = d3.annotation()
+          .type(d3.annotationCalloutCircle)
+          .annotations(annotations);
+
+        svg.append("g")
+          .attr("class", "annotation-group")
+          .call(makeAnnotations);
+
+    }
+
+function scene2(data) {
+  // Clear previous scene
+  svg.selectAll("*").remove();
+
+  const filtered = data.filter(d => d.year >= 1975 & d.year <= 2010);
+
+  // Scales
+  const x = d3.scaleLinear()
+    .domain([d3.min(data, d => d.fertility_rate) - 0.5, d3.max(data, d => d.fertility_rate) + 0.5])
+    .range([0, width]);
+
+  const y = d3.scaleLinear()
+    .domain([d3.min(data, d => d.life_expectancy) - 5, d3.max(data, d => d.life_expectancy) + 5])
+    .range([height, 0]);
+
+  const r = d3.scaleSqrt()
+    .domain([0, d3.max(data, d => d.population)])
+    .range([2, 40]);
+
+  const regions = Array.from(new Set(data.map(d => d.region)));
+  const color = d3.scaleOrdinal().domain(regions).range(d3.schemeSet2);
+  drawLegend(color);
+
+  // Axes
+  svg.append("g")
+    .attr("transform", `translate(0,${height})`)
+    .call(d3.axisBottom(x));
+
+  svg.append("g").call(d3.axisLeft(y));
+
+  // Labels
+  svg.append("text")
+    .attr("class", "axis-label")
+    .attr("x", width / 2)
+    .attr("y", height + 50)
+    .attr("text-anchor", "middle")
+    .text("Fertility Rate");
+
+  svg.append("text")
+    .attr("class", "axis-label")
+    .attr("transform", "rotate(-90)")
+    .attr("x", -height / 2)
+    .attr("y", -50)
+    .attr("text-anchor", "middle")
+    .text("Life Expectancy");
+
+  // Year label
+  const yearLabel = svg.append("text")
+    .attr("id", "yearLabel")
+    .attr("x", width - 30)
+    .attr("y", height - 10)
+    .attr("font-size", 32)
+    .attr("fill", "#ccc");
+
+  // Animate
+  const yearData = d3.group(filtered, d => d.year);
+  const years = Array.from(yearData.keys()).sort((a, b) => a - b);
+
+  function update(year) {
+    const currentData = yearData.get(year);
+
+    const circles = svg.selectAll("circle")
+      .data(currentData, d => d.country_name);  // Fix: use correct key
+
+    circles.enter().append("circle")
+      .attr("cx", d => x(d.fertility_rate))
+      .attr("cy", d => y(d.life_expectancy))
+      .attr("r", d => r(d.population))
+      .attr("fill", d => color(d.region))
+      .attr("opacity", 0.7)
+    .merge(circles)
+      .transition().duration(600)
+      .attr("cx", d => x(d.fertility_rate))
+      .attr("cy", d => y(d.life_expectancy))
+      .attr("r", d => r(d.population));
+
+    circles.exit().remove();
+
+    yearLabel.text(year);
+
+        if (year === 2010) {
+      animationInterval.stop();
+      addAnnotations(currentData);
+    }
+  }
+  // ---- Animation Controller ----
+    let i = 0;
+    update(years[i]);
+
+    // ✅ STOP any previous interval before starting new one
+    if (animationInterval) {
+      animationInterval.stop();
+    }
+
+    animationInterval = d3.interval(() => {
+      if (i >= years.length) {
+        animationInterval.stop(); // Stop automatically at end
+        return;
+      }
+      update(years[i]);
+      i++;
+    }, 400);
+
+// ---- Annotations ----
+  function addAnnotations(data2010) {
+    const minPop = d3.min(data2010, d => d.population);
+    const maxPop = d3.max(data2010, d => d.population);
+
+    const minCountry = data2010.find(d => d.population === minPop);
+    const maxCountry = data2010.find(d => d.population === maxPop);
+
+    const annotations = [
+      {
+        note: {
+          label: `${minCountry.country_name} has the lowest population (${minCountry.population.toLocaleString()})`,
+          title: "Min Population"
+        },
+        x: x(minCountry.fertility_rate),
+        y: y(minCountry.life_expectancy),
+        dy: -30,
+        dx: -30
+      },
+      {
+        note: {
+          label: `${maxCountry.country_name} has the highest population (${maxCountry.population.toLocaleString()})`,
+          title: "Max Population"
+        },
+        x: x(maxCountry.fertility_rate),
+        y: y(maxCountry.life_expectancy),
+        dy: 30,
+        dx: 30
+      }
+    ];
+
+    const makeAnnotations = d3.annotation()
+      .type(d3.annotationLabel)
+      .annotations(annotations);
+
+    svg.append("g")
+      .attr("class", "annotation-group")
+      .call(makeAnnotations);
+  }
+
+}
+
+ function scene3(data) {
+
+       // Show filters only for scene 3
+    d3.select("#filters").style("display", "block");
+
+   const filtered_sc3 = data.filter(d => d.year >= 1975 & d.year <= 2010);
+
+    const years = Array.from(new Set(filtered_sc3.map(d => d.year))).sort((a, b) => a - b);
+    const regions = Array.from(new Set(filtered_sc3.map(d => d.region)));
+    const color = d3.scaleOrdinal().domain(regions).range(d3.schemeSet2);
+
+    const yearSelect = d3.select("#yearSelect");
+    const regionSelect = d3.select("#regionSelect");
+
+  if (yearSelect.selectAll("option").empty()) {
+    yearSelect.selectAll("option")
+      .data(years)
+      .enter()
+      .append("option")
+      .text(d => d)
+      .attr("value", d => d);
+  }
+
+  if (regionSelect.selectAll("option").empty()) {
+    regionSelect.append("option").text("All").attr("value", "All");
+    regionSelect.selectAll("option.region-option")
+      .data(regions)
+      .enter()
+      .append("option")
+      .attr("class", "region-option")
+      .text(d => d)
+      .attr("value", d => d);
+  }
+
+  // Initial filter values
+  const initialYear = +yearSelect.property("value") || years[0];
+  const initialRegion = regionSelect.property("value") || "All";
+
+
+
+
+  updateFilteredScene(initialYear, initialRegion);
+
+  // Add change event handlers
+  yearSelect.on("change", () => {
+    const year = +yearSelect.property("value");
+    const region = regionSelect.property("value");
+    updateFilteredScene(year, region);
+  });
+
+  regionSelect.on("change", () => {
+    const year = +yearSelect.property("value");
+    const region = regionSelect.property("value");
+    updateFilteredScene(year, region);
+  });
+
+
+
+  function updateFilteredScene(year, region) {
+
+      // Clear previous scene
+      svg.selectAll("*").remove();
+
+          const filtered = data.filter(d =>
+      d.year === year && (region === "All" || d.region === region)
+    );
+
+
+    drawLegend(color);
+
+      // Scales
+      const x = d3.scaleLinear()
+        .domain([d3.min(data, d => d.fertility_rate) - 0.5, d3.max(data, d => d.fertility_rate) + 0.5])
+        .range([0, width]);
+
+      const y = d3.scaleLinear()
+        .domain([d3.min(data, d => d.life_expectancy) - 5, d3.max(data, d => d.life_expectancy) + 5])
+        .range([height, 0]);
+
+      const r = d3.scaleSqrt()
+        .domain([0, d3.max(data, d => d.population)])
+        .range([2, 40]);
+
+
+      // Axes
+      svg.append("g")
+        .attr("transform", `translate(0,${height})`)
+        .call(d3.axisBottom(x));
+
+      svg.append("g").call(d3.axisLeft(y));
+
+      // Labels
+      svg.append("text")
+        .attr("class", "axis-label")
+        .attr("x", width / 2)
+        .attr("y", height + 50)
+        .attr("text-anchor", "middle")
+        .text("Fertility Rate");
+
+      svg.append("text")
+        .attr("class", "axis-label")
+        .attr("transform", "rotate(-90)")
+        .attr("x", -height / 2)
+        .attr("y", -50)
+        .attr("text-anchor", "middle")
+        .text("Life Expectancy");
+
+      // Circles
+      svg.selectAll("circle")
+        .data(filtered)
+        .enter()
+        .append("circle")
+        .attr("cx", d => x(d.fertility_rate))
+        .attr("cy", d => y(d.life_expectancy))
+        .attr("r", d => r(d.population))
+        .attr("fill", d => color(d.region))
+        .attr("opacity", 0.7)
+        .on("mouseover", function (event, d) {
+          tooltip.transition().duration(200).style("opacity", .9);
+          tooltip.html(
+            `<strong>${d.country_name}</strong><br>
+             Life Expectancy: ${d.life_expectancy}<br>
+             Fertility Rate: ${d.fertility_rate}<br>
+             Population: ${d.population}`
+          )
+          .style("left", (event.pageX + 10) + "px")
+          .style("top", (event.pageY - 28) + "px");
+        })
+        .on("mouseout", () => tooltip.transition().duration(500).style("opacity", 0));
+    // Find min and max population countries
+        const minPop = d3.min(filtered, d => d.population);
+        const maxPop = d3.max(filtered, d => d.population);
+
+        const minCountry = filtered.find(d => d.population === minPop);
+        const maxCountry = filtered.find(d => d.population === maxPop);
+
+        // Create annotations
+        const annotations = [
+          {
+            note: {
+              label: `Lowest population: ${minCountry.country_name}`,
+              title: `Pop: ${minCountry.population}`
+            },
+            x: x(minCountry.fertility_rate),
+            y: y(minCountry.life_expectancy),
+            dy: -40,
+            dx: 30,
+            subject: { radius: r(minCountry.population), radiusPadding: 4 }
+          },
+          {
+            note: {
+              label: `Highest population: ${maxCountry.country_name}`,
+              title: `Pop: ${maxCountry.population}`
+            },
+            x: x(maxCountry.fertility_rate),
+            y: y(maxCountry.life_expectancy),
+            dy: -40,
+            dx: -60,
+            subject: { radius: r(maxCountry.population), radiusPadding: 4 }
+          }
+        ];
+
+        const makeAnnotations = d3.annotation()
+          .type(d3.annotationCalloutCircle)
+          .annotations(annotations);
+
+        svg.append("g")
+          .attr("class", "annotation-group")
+          .call(makeAnnotations);
+          }
+    }
+
+
+
+    let sceneIndex = 0;
+    const scenes = [scene1, scene2, scene3];
+
+    d3.csv("world_population_data_with_regions.csv").then(data => {
+      data.forEach(d => {
+        d.year = +d.year;
+        d.life_expectancy = +d.life_expectancy;
+        d.fertility_rate = +d.fertility_rate;
+        d.population = +d.population;
+      });
+
+    d3.select("#next").on("click", () => {
+      sceneIndex = Math.min(sceneIndex + 1, scenes.length - 1);
+      updateScene();
+    });
+
+    d3.select("#prev").on("click", () => {
+      sceneIndex = Math.max(sceneIndex - 1, 0);  // ✅ This should go back to scene1
+      updateScene();
+    });
+
+    function updateScene() {
+      // Hide filters unless in scene 3
+      d3.select("#filters").style("display", sceneIndex === 2 ? "inline" : "none");
+      // Clear previous animation if any
+      if (animationInterval) {
+        animationInterval.stop();
+        animationInterval = null;
+      }
+
+      svg.selectAll("*").remove();
+
+      // Run the correct scene
+      scenes[sceneIndex](data);
+
+        d3.select("#scene-subheading").text(sceneSubheadings[sceneIndex]);
+        d3.select("#scene-description-top").text(sceneDescriptionsTop[sceneIndex]);
+        d3.select("#scene-description-right").text(sceneDescriptionsRight[sceneIndex]);
+    }
+
+      // Initial scene
+      updateScene();
     });
   </script>
 </body>
