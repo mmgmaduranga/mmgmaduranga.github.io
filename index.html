@@ -26,8 +26,9 @@
 </head>
 <body>
 <!--  <h1> Life Expectancy vs Fertility Rate (Bubble Size: Population) in 1975</h1>-->
-  <h1> Mapping Global Well-being: Life Expectancy, Fertility, and Population</h1>
-  <h2 id="scene-subheading"></h2>
+  <h2> Mapping Global Well-being: Life Expectancy, Fertility, and Population</h2>
+<!--  <h2 id="scene-subheading-1"></h2>-->
+  <h4 id="scene-subheading-2"></h4>
   <p id="scene-description-top"></p>
   <div id="controls">
     <button id="prev">Previous</button>
@@ -52,20 +53,20 @@
     <label for="regionSelect">Region:</label><br>
     <select id="regionSelect" style="width: 100%;"></select>
   </div>
-  <div id="description-box" style="
-    position: absolute;
-    bottom: 100px;
-    right: 30px;
-    width: 500px;
-    background: rgba(255, 255, 255, 0.8);
-    padding: 10px;
-    font-size: 17px;
-    font-family: sans-serif;
-    border-radius: 4px;
-<!--    box-shadow: 0 0 5px rgba(0,0,0,0.2);-->
-">
-    <p id="scene-description-right"></p>
-  </div>
+<!--  <div id="description-box" style="-->
+<!--    position: absolute;-->
+<!--    bottom: 100px;-->
+<!--    right: 30px;-->
+<!--    width: 500px;-->
+<!--    background: rgba(255, 255, 255, 0.8);-->
+<!--    padding: 10px;-->
+<!--    font-size: 17px;-->
+<!--    font-family: sans-serif;-->
+<!--    border-radius: 4px;-->
+<!--&lt;!&ndash;    box-shadow: 0 0 5px rgba(0,0,0,0.2);&ndash;&gt;-->
+<!--">-->
+<!--    <p id="scene-description-right"></p>-->
+<!--  </div>-->
 </div>
 
 
@@ -89,16 +90,18 @@
       "Animation: Change Over Time (1975 - 2010)",
       "Explore Trends by Year and Region"
     ];
+    const sceneDescriptionsTop1 = [
+     "This scene shows a snapshot of life expectancy vs fertility rate in the year 1975. Bubble size represents population size, and colors indicate world regions.",
+     "This scene animates how life expectancy, fertility, and population have changed for countries from 1975 to 2010.",
+     "Explore Trends by Year and Region"
+    ];
 
-    const sceneDescriptionsTop = [
-      "This scene shows a snapshot of life expectancy vs fertility rate in the year 1975. Bubble size represents population size, and colors indicate world regions.",
-      "This scene animates how life expectancy, fertility, and population have changed for countries from 1975 to 2010.",
-      "Use the filters on the left to select a specific year and region. The chart updates dynamically, allowing you to observe how fertility rate, life expectancy, and population size vary across countries. This interactive view helps uncover regional differences and evolving global patterns."
-    ];
-    const sceneDescriptionsRight = [
+    const sceneDescriptionsTop2 = [
       "In 1975, most European and North American countries had the highest life expectancy and lower fertility rates, indicating advanced healthcare and family planning. In contrast, many countries in Asia and Africa experienced higher fertility rates and lower life expectancy, highlighting global disparities in development and health conditions.",
-      "Paragraph 2"
-    ];
+      "The animation reveals a clear global trend of decreasing fertility rates over time. Many Asian countries show significant improvements in life expectancy, matching levels seen in Europe and North America. Meanwhile, population sizes have continued to grow across most countries. However, countries in the African region still experience higher fertility rates and lower life expectancy, highlighting ongoing disparities in global health and development.",
+      "Use the filters on the left to select a specific year and region. The chart updates dynamically, allowing you to observe how fertility rate, life expectancy, and population size vary across countries. This interactive view helps uncover regional differences and evolving global patterns."
+
+     ];
 
 
     function drawLegend(colorScale) {
@@ -593,9 +596,9 @@ function scene2(data) {
       // Run the correct scene
       scenes[sceneIndex](data);
 
-        d3.select("#scene-subheading").text(sceneSubheadings[sceneIndex]);
-        d3.select("#scene-description-top").text(sceneDescriptionsTop[sceneIndex]);
-        d3.select("#scene-description-right").text(sceneDescriptionsRight[sceneIndex]);
+        d3.select("#scene-subheading-1").text(sceneSubheadings[sceneIndex]);
+        d3.select("#scene-subheading-2").text(sceneDescriptionsTop1[sceneIndex]);
+        d3.select("#scene-description-top").text(sceneDescriptionsTop2[sceneIndex]);
     }
 
       // Initial scene
