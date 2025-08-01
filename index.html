@@ -131,7 +131,7 @@
 
 
     function scene1(data) {
-      const filtered = data.filter(d => d.year === 1975);
+      const filtered = data.filter(d => d.year === 1975  & d.population > 0 & d.fertility_rate > 0 & d.life_expectancy > 0);
 
       // Clear previous scene
       svg.selectAll("*").remove();
@@ -186,18 +186,18 @@
         .attr("r", d => r(d.population))
         .attr("fill", d => color(d.region))
         .attr("opacity", 0.7)
-        .on("mouseover", function (event, d) {
-          tooltip.transition().duration(200).style("opacity", .9);
-          tooltip.html(
-            `<strong>${d.country_name}</strong><br>
-             Life Expectancy: ${d.life_expectancy}<br>
-             Fertility Rate: ${d.fertility_rate}<br>
-             Population: ${d.population}`
-          )
-          .style("left", (event.pageX + 10) + "px")
-          .style("top", (event.pageY - 28) + "px");
-        })
-        .on("mouseout", () => tooltip.transition().duration(500).style("opacity", 0));
+<!--        .on("mouseover", function (event, d) {-->
+<!--          tooltip.transition().duration(200).style("opacity", .9);-->
+<!--          tooltip.html(-->
+<!--            `<strong>${d.country_name}</strong><br>-->
+<!--             Life Expectancy: ${d.life_expectancy}<br>-->
+<!--             Fertility Rate: ${d.fertility_rate}<br>-->
+<!--             Population: ${d.population}`-->
+<!--          )-->
+<!--          .style("left", (event.pageX + 10) + "px")-->
+<!--          .style("top", (event.pageY - 28) + "px");-->
+<!--        })-->
+<!--        .on("mouseout", () => tooltip.transition().duration(500).style("opacity", 0));-->
 
         // Find min and max population countries
         const minPop = d3.min(filtered, d => d.population);
@@ -246,7 +246,7 @@ function scene2(data) {
   // Clear previous scene
   svg.selectAll("*").remove();
 
-  const filtered = data.filter(d => d.year >= 1975 & d.year <= 2010);
+  const filtered = data.filter(d => d.year >= 1975 & d.year <= 2010 & d.population > 0 & d.fertility_rate > 0 & d.life_expectancy > 0);
 
   // Scales
   const x = d3.scaleLinear()
@@ -291,9 +291,9 @@ function scene2(data) {
   // Year label
   const yearLabel = svg.append("text")
     .attr("id", "yearLabel")
-    .attr("x", width - 30)
-    .attr("y", height - 10)
-    .attr("font-size", 32)
+    .attr("x", width - 100)
+    .attr("y", height - 30)
+    .attr("font-size", 50)
     .attr("fill", "#ccc");
 
   // Animate
@@ -347,43 +347,47 @@ function scene2(data) {
 
 // ---- Annotations ----
   function addAnnotations(data2010) {
-    const minPop = d3.min(data2010, d => d.population);
-    const maxPop = d3.max(data2010, d => d.population);
+    // Find min and max population countries
+        const minPop = d3.min(data2010, d => d.population);
+        const maxPop = d3.max(data2010, d => d.population);
 
-    const minCountry = data2010.find(d => d.population === minPop);
-    const maxCountry = data2010.find(d => d.population === maxPop);
+        const minCountry = data2010.find(d => d.population === minPop);
+        const maxCountry = data2010.find(d => d.population === maxPop);
 
-    const annotations = [
-      {
-        note: {
-          label: `${minCountry.country_name} has the lowest population (${minCountry.population.toLocaleString()})`,
-          title: "Min Population"
-        },
-        x: x(minCountry.fertility_rate),
-        y: y(minCountry.life_expectancy),
-        dy: -30,
-        dx: -30
-      },
-      {
-        note: {
-          label: `${maxCountry.country_name} has the highest population (${maxCountry.population.toLocaleString()})`,
-          title: "Max Population"
-        },
-        x: x(maxCountry.fertility_rate),
-        y: y(maxCountry.life_expectancy),
-        dy: 30,
-        dx: 30
-      }
-    ];
+        // Create annotations
+        const annotations = [
+          {
+            note: {
+              label: `Lowest population: ${minCountry.country_name}`,
+              title: `Pop: ${minCountry.population}`
+            },
+            x: x(minCountry.fertility_rate),
+            y: y(minCountry.life_expectancy),
+            dy: -40,
+            dx: 30,
+            subject: { radius: r(minCountry.population), radiusPadding: 4 }
+          },
+          {
+            note: {
+              label: `Highest population: ${maxCountry.country_name}`,
+              title: `Pop: ${maxCountry.population}`
+            },
+            x: x(maxCountry.fertility_rate),
+            y: y(maxCountry.life_expectancy),
+            dy: -10,
+            dx: -40,
+            subject: { radius: r(maxCountry.population), radiusPadding: 4 }
+          }
+        ];
 
-    const makeAnnotations = d3.annotation()
-      .type(d3.annotationLabel)
-      .annotations(annotations);
+        const makeAnnotations = d3.annotation()
+          .type(d3.annotationCalloutCircle)
+          .annotations(annotations);
 
-    svg.append("g")
-      .attr("class", "annotation-group")
-      .call(makeAnnotations);
-  }
+        svg.append("g")
+          .attr("class", "annotation-group")
+          .call(makeAnnotations);
+          }
 
 }
 
@@ -392,7 +396,7 @@ function scene2(data) {
        // Show filters only for scene 3
     d3.select("#filters").style("display", "block");
 
-   const filtered_sc3 = data.filter(d => d.year >= 1975 & d.year <= 2010);
+   const filtered_sc3 = data.filter(d => d.year >= 1975 & d.year <= 2010 );
 
     const years = Array.from(new Set(filtered_sc3.map(d => d.year))).sort((a, b) => a - b);
     const regions = Array.from(new Set(filtered_sc3.map(d => d.region)));
@@ -451,7 +455,7 @@ function scene2(data) {
       svg.selectAll("*").remove();
 
           const filtered = data.filter(d =>
-      d.year === year && (region === "All" || d.region === region)
+      d.year === year && (region === "All" || d.region === region) & d.population > 0 & d.fertility_rate > 0 & d.life_expectancy > 0
     );
 
 
@@ -543,8 +547,8 @@ function scene2(data) {
             },
             x: x(maxCountry.fertility_rate),
             y: y(maxCountry.life_expectancy),
-            dy: -40,
-            dx: -60,
+            dy: -10,
+            dx: -40,
             subject: { radius: r(maxCountry.population), radiusPadding: 4 }
           }
         ];
